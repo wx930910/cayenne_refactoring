@@ -37,7 +37,6 @@ public class ModelerEventTest {
 		MapEvent event = Mockito.mock(MapEvent.class,
 				Mockito.withSettings().defaultAnswer(Mockito.CALLS_REAL_METHODS).useConstructor(src));
 		Mockito.when(event.getNewName()).thenReturn("");
-		// MapEvent e = new TestMapEvent(src);
 		assertSame(src, event.getSource());
 	}
 
@@ -46,26 +45,10 @@ public class ModelerEventTest {
 		MapEvent event = Mockito.mock(MapEvent.class,
 				Mockito.withSettings().defaultAnswer(Mockito.CALLS_REAL_METHODS).useConstructor(new Object()));
 		Mockito.when(event.getNewName()).thenReturn("");
-		// MapEvent e = new TestMapEvent(new Object());
 		assertEquals(MapEvent.CHANGE, event.getId());
 
 		event.setId(MapEvent.ADD);
 		assertEquals(MapEvent.ADD, event.getId());
 	}
 
-	class TestMapEvent extends MapEvent {
-		public TestMapEvent(Object source) {
-			super(source);
-			// TODO Auto-generated constructor stub
-		}
-
-		public TestMapEvent(Object source, String oldName) {
-			super(source, oldName);
-			// TODO Auto-generated constructor stub
-		}
-
-		public String getNewName() {
-			return "";
-		}
-	}
 }

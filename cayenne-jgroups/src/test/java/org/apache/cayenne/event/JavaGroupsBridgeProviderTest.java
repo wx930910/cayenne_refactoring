@@ -77,8 +77,19 @@ public class JavaGroupsBridgeProviderTest {
 			JGroupsModule.contributeMulticastPort(binder, Integer.parseInt(MCAST_PORT_TEST));
 			JGroupsModule.contributeConfigUrl(binder, CONFIG_URL_TEST);
 		};
-
-		Injector injector = DIBootstrap.createInjector(new DefaultBindings(), new JGroupsModule(), module);
+		Module defaultBinding = Mockito.mock(Module.class);
+		Mockito.doAnswer(invocation -> {
+			Binder binder = invocation.getArgument(0);
+			binder.bindMap(String.class, Constants.PROPERTIES_MAP);
+			binder.bind(DataDomain.class).toInstance(DOMAIN);
+			binder.bind(EventManager.class).toInstance(EVENT_MANAGER);
+			binder.bind(TransactionManager.class).to(DefaultTransactionManager.class);
+			binder.bind(TransactionFactory.class).to(DefaultTransactionFactory.class);
+			binder.bind(JdbcEventLogger.class).to(Slf4jJdbcEventLogger.class);
+			binder.bind(RuntimeProperties.class).to(DefaultRuntimeProperties.class);
+			return null;
+		}).when(defaultBinding).configure(Mockito.any());
+		Injector injector = DIBootstrap.createInjector(defaultBinding, new JGroupsModule(), module);
 		JavaGroupsBridge bridge = (JavaGroupsBridge) injector.getInstance(EventBridge.class);
 
 		assertEquals(MCAST_ADDRESS_TEST, bridge.getMulticastAddress());
@@ -88,17 +99,9 @@ public class JavaGroupsBridgeProviderTest {
 
 	@Test
 	public void testUseDefaultProperties() throws Exception {
-		Injector injector = DIBootstrap.createInjector(new DefaultBindings(), new JGroupsModule());
-		JavaGroupsBridge bridge = (JavaGroupsBridge) injector.getInstance(EventBridge.class);
-
-		assertEquals(JavaGroupsBridge.MCAST_ADDRESS_DEFAULT, bridge.getMulticastAddress());
-		assertEquals(JavaGroupsBridge.MCAST_PORT_DEFAULT, bridge.getMulticastPort());
-		assertNull(bridge.getConfigURL());
-	}
-
-	static class DefaultBindings implements Module {
-		@Override
-		public void configure(Binder binder) {
+		Module defaultBinding = Mockito.mock(Module.class);
+		Mockito.doAnswer(invocation -> {
+			Binder binder = invocation.getArgument(0);
 			binder.bindMap(String.class, Constants.PROPERTIES_MAP);
 			binder.bind(DataDomain.class).toInstance(DOMAIN);
 			binder.bind(EventManager.class).toInstance(EVENT_MANAGER);
@@ -106,6 +109,14 @@ public class JavaGroupsBridgeProviderTest {
 			binder.bind(TransactionFactory.class).to(DefaultTransactionFactory.class);
 			binder.bind(JdbcEventLogger.class).to(Slf4jJdbcEventLogger.class);
 			binder.bind(RuntimeProperties.class).to(DefaultRuntimeProperties.class);
-		}
+			return null;
+		}).when(defaultBinding).configure(Mockito.any());
+		Injector injector = DIBootstrap.createInjector(defaultBinding, new JGroupsModule());
+		JavaGroupsBridge bridge = (JavaGroupsBridge) injector.getInstance(EventBridge.class);
+
+		assertEquals(JavaGroupsBridge.MCAST_ADDRESS_DEFAULT, bridge.getMulticastAddress());
+		assertEquals(JavaGroupsBridge.MCAST_PORT_DEFAULT, bridge.getMulticastPort());
+		assertNull(bridge.getConfigURL());
 	}
+
 }
