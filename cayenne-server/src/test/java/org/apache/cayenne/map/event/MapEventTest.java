@@ -33,14 +33,14 @@ public class MapEventTest {
 
 	@Test
 	public void testNoNameChange() throws Exception {
-		MapEvent event = new MapEventFixture(new Object(), "someName");
+		MapEvent event = mockMapEvent(new Object(), "someName");
 		assertEquals("someName", event.getNewName());
 		assertFalse(event.isNameChange());
 	}
 
 	@Test
 	public void testNameChange() throws Exception {
-		MapEvent event = new MapEventFixture(new Object(), "someName", "someOldName");
+		MapEvent event = mockMapEvent(new Object(), "someName", "someOldName");
 		assertEquals("someName", event.getNewName());
 		assertTrue(event.isNameChange());
 	}
@@ -54,24 +54,11 @@ public class MapEventTest {
 		assertEquals("oldName", event.getOldName());
 	}
 
-	final class MapEventFixture extends MapEvent {
-
-		String newName;
-
-		public MapEventFixture(Object source, String newName) {
-			super(source);
-			this.newName = newName;
-		}
-
-		public MapEventFixture(Object source, String newName, String oldName) {
-			super(source, oldName);
-			this.newName = newName;
-		}
-
-		@Override
-		public String getNewName() {
-			return newName;
-		}
+	private MapEvent mockMapEvent(Object source, String newName, String oldName) {
+		MapEvent res = Mockito.mock(MapEvent.class,
+				Mockito.withSettings().defaultAnswer(Mockito.CALLS_REAL_METHODS).useConstructor(source, oldName));
+		Mockito.when(res.getNewName()).thenReturn(newName);
+		return res;
 	}
 
 	private MapEvent mockMapEvent(Object source, String newName) {
