@@ -52,7 +52,8 @@ public class EventBridgeTest {
 	public void testConstructor() throws Exception {
 		EventSubject local = EventSubject.getSubject(EventBridgeTest.class, "testInstall");
 		String external = "externalSubject";
-		TestBridge bridge = new TestBridge(local, external);
+		EventBridge bridge = Mockito.mock(EventBridge.class,
+				Mockito.withSettings().defaultAnswer(Mockito.CALLS_REAL_METHODS).useConstructor(local, external));
 
 		Collection subjects = bridge.getLocalSubjects();
 		assertEquals(1, subjects.size());
@@ -64,15 +65,16 @@ public class EventBridgeTest {
 	public void testStartup() throws Exception {
 		EventSubject local = EventSubject.getSubject(EventBridgeTest.class, "testInstall");
 		String external = "externalSubject";
-		TestBridge bridge = new TestBridge(local, external);
+		EventBridge bridge = Mockito.mock(EventBridge.class,
+				Mockito.withSettings().defaultAnswer(Mockito.CALLS_REAL_METHODS).useConstructor(local, external));
 
 		DefaultEventManager manager = new DefaultEventManager();
 		managersToClean.add(manager);
 		bridge.startup(manager, EventBridge.RECEIVE_LOCAL_EXTERNAL);
 
 		assertSame(manager, bridge.eventManager);
-		assertEquals(1, bridge.startupCalls);
-		assertEquals(0, bridge.shutdownCalls);
+		Mockito.verify(bridge, Mockito.times(1)).startupExternal();
+		Mockito.verify(bridge, Mockito.never()).shutdownExternal();
 
 		// try startup again
 		DefaultEventManager newManager = new DefaultEventManager();
@@ -80,15 +82,16 @@ public class EventBridgeTest {
 		bridge.startup(newManager, EventBridge.RECEIVE_LOCAL_EXTERNAL);
 
 		assertSame(newManager, bridge.eventManager);
-		assertEquals(2, bridge.startupCalls);
-		assertEquals(1, bridge.shutdownCalls);
+		Mockito.verify(bridge, Mockito.times(2)).startupExternal();
+		Mockito.verify(bridge, Mockito.times(1)).shutdownExternal();
 	}
 
 	@Test
 	public void testShutdown() throws Exception {
 		EventSubject local = EventSubject.getSubject(EventBridgeTest.class, "testInstall");
 		String external = "externalSubject";
-		TestBridge bridge = new TestBridge(local, external);
+		EventBridge bridge = Mockito.mock(EventBridge.class,
+				Mockito.withSettings().defaultAnswer(Mockito.CALLS_REAL_METHODS).useConstructor(local, external));
 
 		DefaultEventManager manager = new DefaultEventManager();
 		managersToClean.add(manager);
@@ -96,8 +99,10 @@ public class EventBridgeTest {
 		bridge.shutdown();
 
 		assertNull(bridge.eventManager);
-		assertEquals(1, bridge.startupCalls);
-		assertEquals(1, bridge.shutdownCalls);
+		Mockito.verify(bridge, Mockito.times(1)).startupExternal();
+		Mockito.verify(bridge, Mockito.times(1)).shutdownExternal();
+		// assertEquals(1, bridge.startupCalls);
+		// assertEquals(1, bridge.shutdownCalls);
 	}
 
 	@Test
@@ -106,7 +111,6 @@ public class EventBridgeTest {
 		final EventSubject local = EventSubject.getSubject(EventBridgeTest.class, "testInstall");
 		final String external = "externalSubject";
 		CayenneEvent[] lastLocalEvent = new CayenneEvent[1];
-		// final TestBridge bridge = new TestBridge(local, external);
 		final EventBridge bridge = Mockito.mock(EventBridge.class,
 				Mockito.withSettings().defaultAnswer(Mockito.CALLS_REAL_METHODS).useConstructor(local, external));
 		Mockito.doAnswer(invo -> {
@@ -156,29 +160,4 @@ public class EventBridgeTest {
 		helper1.runTest(5000);
 	}
 
-	class TestBridge extends EventBridge {
-
-		CayenneEvent lastLocalEvent;
-		int startupCalls;
-		int shutdownCalls;
-
-		public TestBridge(EventSubject localSubject, String externalSubject) {
-			super(localSubject, externalSubject);
-		}
-
-		@Override
-		public void sendExternalEvent(CayenneEvent event) {
-			lastLocalEvent = event;
-		}
-
-		@Override
-		protected void shutdownExternal() throws Exception {
-			shutdownCalls++;
-		}
-
-		@Override
-		protected void startupExternal() throws Exception {
-			startupCalls++;
-		}
-	}
 }
