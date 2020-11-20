@@ -19,15 +19,11 @@
 
 package org.apache.cayenne.access;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import org.apache.cayenne.DataChannel;
 import org.apache.cayenne.DataChannelListener;
 import org.apache.cayenne.ObjectContext;
 import org.apache.cayenne.configuration.server.ServerRuntime;
 import org.apache.cayenne.di.Inject;
-import org.apache.cayenne.graph.GraphEvent;
 import org.apache.cayenne.test.parallel.ParallelTestContainer;
 import org.apache.cayenne.testdo.testmap.Artist;
 import org.apache.cayenne.unit.di.server.CayenneProjects;
@@ -58,7 +54,7 @@ public class DataContextDataChannelEventsIT extends ServerCaseContextsSync {
 		a.setArtistName("X");
 		context.commitChanges();
 
-		final MockChannelListener listener = new MockChannelListener();
+		final DataChannelListener listener = Mockito.mock(DataChannelListener.class);
 		EventUtil.listenForChannelEvents(context, listener);
 
 		a.setArtistName("Y");
@@ -68,9 +64,9 @@ public class DataContextDataChannelEventsIT extends ServerCaseContextsSync {
 
 			@Override
 			protected void assertResult() throws Exception {
-				assertTrue(listener.graphCommitted);
-				assertFalse(listener.graphChanged);
-				assertFalse(listener.graphRolledBack);
+				Mockito.verify(listener, Mockito.atLeastOnce()).graphFlushed(Mockito.any());
+				Mockito.verify(listener, Mockito.never()).graphChanged(Mockito.any());
+				Mockito.verify(listener, Mockito.never()).graphRolledback(Mockito.any());
 			}
 		}.runTest(10000);
 
@@ -82,7 +78,7 @@ public class DataContextDataChannelEventsIT extends ServerCaseContextsSync {
 		a.setArtistName("X");
 		context.commitChanges();
 
-		final MockChannelListener listener = new MockChannelListener();
+		final DataChannelListener listener = Mockito.mock(DataChannelListener.class);
 		EventUtil.listenForChannelEvents(context, listener);
 
 		a.setArtistName("Y");
@@ -92,9 +88,9 @@ public class DataContextDataChannelEventsIT extends ServerCaseContextsSync {
 
 			@Override
 			protected void assertResult() throws Exception {
-				assertFalse(listener.graphCommitted);
-				assertFalse(listener.graphChanged);
-				assertTrue(listener.graphRolledBack);
+				Mockito.verify(listener, Mockito.never()).graphFlushed(Mockito.any());
+				Mockito.verify(listener, Mockito.never()).graphChanged(Mockito.any());
+				Mockito.verify(listener, Mockito.atLeastOnce()).graphRolledback(Mockito.any());
 			}
 		}.runTest(10000);
 	}
@@ -120,11 +116,8 @@ public class DataContextDataChannelEventsIT extends ServerCaseContextsSync {
 			@Override
 			protected void assertResult() throws Exception {
 				Mockito.verify(listener, Mockito.never()).graphFlushed(Mockito.any());
-				// assertFalse(listener.graphCommitted);
 				Mockito.verify(listener, Mockito.atLeastOnce()).graphChanged(Mockito.any());
-				// assertTrue(listener.graphChanged);
 				Mockito.verify(listener, Mockito.never()).graphRolledback(Mockito.any());
-				// assertFalse(listener.graphRolledBack);
 			}
 		}.runTest(10000);
 	}
@@ -135,7 +128,7 @@ public class DataContextDataChannelEventsIT extends ServerCaseContextsSync {
 		a.setArtistName("X");
 		context.commitChanges();
 
-		final MockChannelListener listener = new MockChannelListener();
+		final DataChannelListener listener = Mockito.mock(DataChannelListener.class);
 		EventUtil.listenForChannelEvents(context, listener);
 
 		Artist a1 = peer.localObject(a);
@@ -147,9 +140,9 @@ public class DataContextDataChannelEventsIT extends ServerCaseContextsSync {
 
 			@Override
 			protected void assertResult() throws Exception {
-				assertFalse(listener.graphCommitted);
-				assertTrue(listener.graphChanged);
-				assertFalse(listener.graphRolledBack);
+				Mockito.verify(listener, Mockito.never()).graphFlushed(Mockito.any());
+				Mockito.verify(listener, Mockito.atLeastOnce()).graphChanged(Mockito.any());
+				Mockito.verify(listener, Mockito.never()).graphRolledback(Mockito.any());
 			}
 		}.runTest(10000);
 	}
@@ -162,7 +155,7 @@ public class DataContextDataChannelEventsIT extends ServerCaseContextsSync {
 		a.setArtistName("X");
 		childPeer1.commitChanges();
 
-		final MockChannelListener listener = new MockChannelListener();
+		final DataChannelListener listener = Mockito.mock(DataChannelListener.class);
 		EventUtil.listenForChannelEvents((DataChannel) childPeer1, listener);
 
 		ObjectContext childPeer2 = runtime.newContext(context);
@@ -176,29 +169,11 @@ public class DataContextDataChannelEventsIT extends ServerCaseContextsSync {
 
 			@Override
 			protected void assertResult() throws Exception {
-				assertFalse(listener.graphCommitted);
-				assertTrue(listener.graphChanged);
-				assertFalse(listener.graphRolledBack);
+				Mockito.verify(listener, Mockito.never()).graphFlushed(Mockito.any());
+				Mockito.verify(listener, Mockito.atLeastOnce()).graphChanged(Mockito.any());
+				Mockito.verify(listener, Mockito.never()).graphRolledback(Mockito.any());
 			}
 		}.runTest(10000);
 	}
 
-	class MockChannelListener implements DataChannelListener {
-
-		boolean graphChanged;
-		boolean graphCommitted;
-		boolean graphRolledBack;
-
-		public void graphChanged(GraphEvent event) {
-			graphChanged = true;
-		}
-
-		public void graphFlushed(GraphEvent event) {
-			graphCommitted = true;
-		}
-
-		public void graphRolledback(GraphEvent event) {
-			graphRolledBack = true;
-		}
-	}
 }
